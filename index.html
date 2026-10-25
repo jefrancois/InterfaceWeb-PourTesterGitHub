@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplication de deux nombres</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Voici le site web qui demande deux chiffres</h1>
+</header>
+
+<main>
+  <div>
+    <label for="nombre1">Premier nombre :</label>
+    <input type="number" id="nombre1" placeholder="Entrez le premier nombre">
+  </div>
+
+  <div>
+    <label for="nombre2">Deuxième nombre :</label>
+    <input type="number" id="nombre2" placeholder="Entrez le deuxième nombre">
+  </div>
+
+  <div>
+    <label for="operation">Opération :</label>
+    <select id="operation">
+      <option value="addition">Addition (+)</option>
+      <option value="soustraction">Soustraction (-)</option>
+      <option value="multiplication">Multiplication (×)</option>
+    </select>
+  </div>
+
+  <button id="calculerBtn">Résultat</button>
+
+  <div id="resultat"></div>
+</main>
+
+<script>
+  class ValidationError extends Error {}
+
+  // Chaque opération respecte le même contrat {symbole, executer(a, b)} :
+  // en ajouter une nouvelle n'oblige à modifier ni Calculator ni le contrôleur (OCP).
+  const operations = {
+    addition: { symbole: "+", executer: (a, b) => a + b },
+    soustraction: { symbole: "-", executer: (a, b) => a - b },
+    multiplication: { symbole: "×", executer: (a, b) => a * b },
+  };
+
+  class OperationRegistry {
+    constructor(operations) {
+      this.operations = operations;
+    }
+    get(cle) {
+      const operation = this.operations[cle];
+      if (!operation) {
+        throw new Error(`Opération inconnue : ${cle}`);
+      }
+      return operation;
+    }
+  }
+
+  class NumberInputValidator {
+    valider(valeurBrute) {
+      const valeur = parseFloat(valeurBrute);
+      if (isNaN(valeur)) {
+        throw new ValidationError("Veuillez saisir deux nombres valides.");
+      }
+      return valeur;
+    }
+  }
+
+  class Calculator {
+    constructor(registry) {
+      this.registry = registry;
+    }
+    calculer(operationCle, a, b) {
+      const operation = this.registry.get(operationCle);
+      return { resultat: operation.executer(a, b), symbole: operation.symbole };
+    }
+  }
+
+  class ResultFormatter {
+    formater(a, b, symbole, resultat) {
+      return `${a} ${symbole} ${b} = ${resultat}`;
+    }
+  }
+
+  class CalculatorView {
+    constructor({ nombre1Input, nombre2Input, operationSelect, resultatDiv }) {
+      this.nombre1Input = nombre1Input;
+      this.nombre2Input = nombre2Input;
+      this.operationSelect = operationSelect;
+      this.resultatDiv = resultatDiv;
+    }
+    lireNombre1() { return this.nombre1Input.value; }
+    lireNombre2() { return this.nombre2Input.value; }
+    lireOperation() { return this.operationSelect.value; }
+    afficherResultat(texte) { this.resultatDiv.textContent = texte; }
+  }
+
+  // Le contrôleur dépend des abstractions (validateur, calculateur, formateur, vue)
+  // reçues en paramètre, jamais de leur implémentation concrète (DIP).
+  class CalculatorController {
+    constructor(view, validator, calculator, formatter) {
+      this.view = view;
+      this.validator = validator;
+      this.calculator = calculator;
+      this.formatter = formatter;
+    }
+    calculer() {
+      try {
+        const n1 = this.validator.valider(this.view.lireNombre1());
+        const n2 = this.validator.valider(this.view.lireNombre2());
+        const operationCle = this.view.lireOperation();
+        const { resultat, symbole } = this.calculator.calculer(operationCle, n1, n2);
+        this.view.afficherResultat(this.formatter.formater(n1, n2, symbole, resultat));
+      } catch (erreur) {
+        this.view.afficherResultat(erreur.message);
+      }
+    }
+  }
+
+  const view = new CalculatorView({
+    nombre1Input: document.getElementById('nombre1'),
+    nombre2Input: document.getElementById('nombre2'),
+    operationSelect: document.getElementById('operation'),
+    resultatDiv: document.getElementById('resultat'),
+  });
+
+  const controller = new CalculatorController(
+    view,
+    new NumberInputValidator(),
+    new Calculator(new OperationRegistry(operations)),
+    new ResultFormatter()
+  );
+
+  document.getElementById('calculerBtn').addEventListener('click', () => controller.calculer());
+</script>
+
+</body>
+</html>
