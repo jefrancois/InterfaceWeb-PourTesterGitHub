@@ -3,141 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Multiplication de deux nombres</title>
+<title>Calculatrices</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header>
-  <h1>Voici le site web qui demande deux chiffres</h1>
+  <h1>Calculatrices</h1>
+  <nav class="menu">
+    <button class="menu-item actif" data-cible="simple">Calculatrice simple</button>
+    <button class="menu-item" data-cible="scientifique">Calculatrice scientifique</button>
+    <button class="menu-item" data-cible="graphique">Calculatrice graphique</button>
+  </nav>
 </header>
 
 <main>
-  <div>
-    <label for="nombre1">Premier nombre :</label>
-    <input type="number" id="nombre1" placeholder="Entrez le premier nombre">
-  </div>
 
-  <div>
-    <label for="nombre2">Deuxième nombre :</label>
-    <input type="number" id="nombre2" placeholder="Entrez le deuxième nombre">
-  </div>
+  <section id="panneau-simple" class="panneau actif panneau-etroit">
+    <div>
+      <label for="nombre1">Premier nombre :</label>
+      <input type="number" id="nombre1" placeholder="Entrez le premier nombre">
+    </div>
 
-  <div>
-    <label for="operation">Opération :</label>
-    <select id="operation">
-      <option value="addition">Addition (+)</option>
-      <option value="soustraction">Soustraction (-)</option>
-      <option value="multiplication">Multiplication (×)</option>
-    </select>
-  </div>
+    <div>
+      <label for="nombre2">Deuxième nombre :</label>
+      <input type="number" id="nombre2" placeholder="Entrez le deuxième nombre">
+    </div>
 
-  <button id="calculerBtn">Résultat</button>
+    <div>
+      <label for="operation">Opération :</label>
+      <select id="operation">
+        <option value="addition">Addition (+)</option>
+        <option value="soustraction">Soustraction (-)</option>
+        <option value="multiplication">Multiplication (×)</option>
+      </select>
+    </div>
 
-  <div id="resultat"></div>
+    <button id="calculerBtn">Résultat</button>
+
+    <div id="resultat"></div>
+  </section>
+
+  <section id="panneau-scientifique" class="panneau panneau-etroit">
+    <input type="text" id="sci-affichage" class="sci-affichage" placeholder="0">
+
+    <div class="sci-grille">
+      <button data-action="mode" id="sci-mode">Rad</button>
+      <button data-action="ac">AC</button>
+      <button data-action="del">DEL</button>
+      <button data-valeur="(">(</button>
+      <button data-valeur=")">)</button>
+
+      <button data-valeur="sin(">sin</button>
+      <button data-valeur="cos(">cos</button>
+      <button data-valeur="tan(">tan</button>
+      <button data-valeur="^">^</button>
+      <button data-valeur="sqrt(">√</button>
+
+      <button data-valeur="7">7</button>
+      <button data-valeur="8">8</button>
+      <button data-valeur="9">9</button>
+      <button data-valeur="/">÷</button>
+      <button data-valeur="log(">log</button>
+
+      <button data-valeur="4">4</button>
+      <button data-valeur="5">5</button>
+      <button data-valeur="6">6</button>
+      <button data-valeur="*">×</button>
+      <button data-valeur="ln(">ln</button>
+
+      <button data-valeur="1">1</button>
+      <button data-valeur="2">2</button>
+      <button data-valeur="3">3</button>
+      <button data-valeur="-">−</button>
+      <button data-valeur="pi">π</button>
+
+      <button data-valeur="0">0</button>
+      <button data-valeur=".">.</button>
+      <button data-action="egal" class="sci-egal">=</button>
+      <button data-valeur="+">+</button>
+      <button data-valeur="e">e</button>
+    </div>
+
+    <div id="sci-erreur" class="erreur"></div>
+  </section>
+
+  <section id="panneau-graphique" class="panneau panneau-large">
+    <div class="graph-barre">
+      <label for="fonction">f(x) =</label>
+      <input type="text" id="fonction" placeholder="ex: sin(x)*x">
+      <button id="tracerBtn">Tracer</button>
+    </div>
+
+    <div class="graph-controles">
+      <button id="zoomMoins">−</button>
+      <button id="zoomPlus">+</button>
+      <button id="reinitialiserVue">Réinitialiser la vue</button>
+    </div>
+
+    <canvas id="graphCanvas" width="600" height="400"></canvas>
+
+    <div id="grapheErreur" class="erreur"></div>
+  </section>
+
 </main>
 
-<script>
-  class ValidationError extends Error {}
-
-  // Chaque opération respecte le même contrat {symbole, executer(a, b)} :
-  // en ajouter une nouvelle n'oblige à modifier ni Calculator ni le contrôleur (OCP).
-  const operations = {
-    addition: { symbole: "+", executer: (a, b) => a + b },
-    soustraction: { symbole: "-", executer: (a, b) => a - b },
-    multiplication: { symbole: "×", executer: (a, b) => a * b },
-  };
-
-  class OperationRegistry {
-    constructor(operations) {
-      this.operations = operations;
-    }
-    get(cle) {
-      const operation = this.operations[cle];
-      if (!operation) {
-        throw new Error(`Opération inconnue : ${cle}`);
-      }
-      return operation;
-    }
-  }
-
-  class NumberInputValidator {
-    valider(valeurBrute) {
-      const valeur = parseFloat(valeurBrute);
-      if (isNaN(valeur)) {
-        throw new ValidationError("Veuillez saisir deux nombres valides.");
-      }
-      return valeur;
-    }
-  }
-
-  class Calculator {
-    constructor(registry) {
-      this.registry = registry;
-    }
-    calculer(operationCle, a, b) {
-      const operation = this.registry.get(operationCle);
-      return { resultat: operation.executer(a, b), symbole: operation.symbole };
-    }
-  }
-
-  class ResultFormatter {
-    formater(a, b, symbole, resultat) {
-      return `${a} ${symbole} ${b} = ${resultat}`;
-    }
-  }
-
-  class CalculatorView {
-    constructor({ nombre1Input, nombre2Input, operationSelect, resultatDiv }) {
-      this.nombre1Input = nombre1Input;
-      this.nombre2Input = nombre2Input;
-      this.operationSelect = operationSelect;
-      this.resultatDiv = resultatDiv;
-    }
-    lireNombre1() { return this.nombre1Input.value; }
-    lireNombre2() { return this.nombre2Input.value; }
-    lireOperation() { return this.operationSelect.value; }
-    afficherResultat(texte) { this.resultatDiv.textContent = texte; }
-  }
-
-  // Le contrôleur dépend des abstractions (validateur, calculateur, formateur, vue)
-  // reçues en paramètre, jamais de leur implémentation concrète (DIP).
-  class CalculatorController {
-    constructor(view, validator, calculator, formatter) {
-      this.view = view;
-      this.validator = validator;
-      this.calculator = calculator;
-      this.formatter = formatter;
-    }
-    calculer() {
-      try {
-        const n1 = this.validator.valider(this.view.lireNombre1());
-        const n2 = this.validator.valider(this.view.lireNombre2());
-        const operationCle = this.view.lireOperation();
-        const { resultat, symbole } = this.calculator.calculer(operationCle, n1, n2);
-        this.view.afficherResultat(this.formatter.formater(n1, n2, symbole, resultat));
-      } catch (erreur) {
-        this.view.afficherResultat(erreur.message);
-      }
-    }
-  }
-
-  const view = new CalculatorView({
-    nombre1Input: document.getElementById('nombre1'),
-    nombre2Input: document.getElementById('nombre2'),
-    operationSelect: document.getElementById('operation'),
-    resultatDiv: document.getElementById('resultat'),
-  });
-
-  const controller = new CalculatorController(
-    view,
-    new NumberInputValidator(),
-    new Calculator(new OperationRegistry(operations)),
-    new ResultFormatter()
-  );
-
-  document.getElementById('calculerBtn').addEventListener('click', () => controller.calculer());
-</script>
+<script src="app.js" defer></script>
 
 </body>
 </html>
